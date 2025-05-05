@@ -8,7 +8,7 @@ exports.createCourse = async (req, res) => {
             thumbnail,
             description,
             category,
-            duration,
+            duration, price,
             lessons,
             createdBy,
         } = req.body;
@@ -22,7 +22,7 @@ exports.createCourse = async (req, res) => {
             thumbnail,
             description,
             category,
-            duration,
+            duration, price,
             lessons,
             createdBy,
         });
@@ -53,6 +53,39 @@ exports.getCourseById = async (req, res) => {
         }
 
         sendSuccess(res, 'Course fetched successfully', course);
+    } catch (error) {
+        sendError(res, error);
+    }
+};
+
+exports.editCourse = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updatedData = req.body;
+
+        const course = await Course.findByIdAndUpdate(id, updatedData, { new: true });
+
+        if (!course) {
+            return sendError(res, 'Course not found');
+        }
+
+        sendSuccess(res, 'Course updated successfully', course);
+    } catch (error) {
+        sendError(res, error);
+    }
+};
+
+exports.deleteCourse = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+
+        const course = await Course.findByIdAndDelete(courseId);
+
+        if (!course) {
+            return sendError(res, 'Course not found');
+        }
+
+        sendSuccess(res, 'Course deleted successfully', course);
     } catch (error) {
         sendError(res, error);
     }
