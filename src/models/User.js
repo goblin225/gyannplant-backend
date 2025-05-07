@@ -4,8 +4,7 @@ const { Schema } = mongoose;
 const userSchema = new Schema(
   {
     name: {
-      type: String,
-      trim: true,
+      type: String
     },
     email: {
       type: String,
@@ -19,14 +18,14 @@ const userSchema = new Schema(
       },
     },
     role: {
-      type: String,
-      enum: ['admin', 'user', 'moderator'],
+      type: String
     },
     phoneNumber: {
       type: String,
       required: [true, 'Phone number is required'],
       unique: true,
     },
+    profile_pic: { type: String },
     isActive: {
       type: Boolean,
       default: true,

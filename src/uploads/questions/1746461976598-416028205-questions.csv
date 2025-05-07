@@ -1,0 +1,5 @@
+questionText,option1,option2,option3,option4,correctAnswer,marks
+What is JSX?,Java,XML,HTML in JS,Function,HTML in JS,2
+What does useEffect do?,Runs code,Fetches data,Cleans up,All of the above,All of the above,3
+What is React?,Library,Framework,Programming language,Platform,Library,2
+What is the use of useState hook?,Change state,Track side effects,Render component,Handle API requests,Change state,1

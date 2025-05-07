@@ -9,7 +9,7 @@ exports.createCourse = async (req, res) => {
             description,
             category,
             duration, price,
-            lessons,
+            lessons, role,
             createdBy,
         } = req.body;
 
@@ -21,7 +21,7 @@ exports.createCourse = async (req, res) => {
             title,
             thumbnail,
             description,
-            category,
+            category, role,
             duration, price,
             lessons,
             createdBy,
@@ -37,7 +37,7 @@ exports.createCourse = async (req, res) => {
 exports.getCourse = async (req, res) => {
     try {
         const courses = await Course.find().sort({ createdAt: -1 });
-        sendSuccess(res, 'Users fetched successfully', courses);
+        sendSuccess(res, 'Course fetched successfully', courses);
     } catch (error) {
         sendError(res, error);
     }
@@ -60,13 +60,13 @@ exports.getCourseById = async (req, res) => {
 
 exports.editCourse = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { _id: courseId } = req.params;
         const updatedData = req.body;
 
-        const course = await Course.findByIdAndUpdate(id, updatedData, { new: true });
+        const course = await Course.findByIdAndUpdate(courseId, updatedData, { new: true });
 
         if (!course) {
-            return sendError(res, 'Course not found');
+            return sendErrorMessage(res, 'Course not found');
         }
 
         sendSuccess(res, 'Course updated successfully', course);

@@ -32,13 +32,15 @@ exports.getUserById = async (req, res) => {
 exports.updateUserProfile = async (req, res) => {
   try {
 
-    const userId = req.params.id;
-    const { name, email, phone_number } = req.body;
+    const { id: userId } = req.params;
+    const { name, email, phoneNumber, profile_pic, role } = req.body;
 
     const updateData = {};
-    if (name) updateData.full_name = name;
+    if (name) updateData.name = name;
     if (email) updateData.email = email;
-    if (phone_number) updateData.phone_number = phone_number;
+    if (phoneNumber) updateData.phoneNumber = phoneNumber;
+    if (profile_pic) updateData.profile_pic = profile_pic;
+    if (role) updateData.role = role;
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,

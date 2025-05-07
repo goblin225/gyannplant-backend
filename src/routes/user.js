@@ -5,6 +5,6 @@ const router = Router();
 
 router.get('/getAllUsers', getAllUsers);
 router.get('/getbyid/:id', getUserById);
-router.get('/update-profile/:id', updateUserProfile);
+router.put('/update-profile/:id', updateUserProfile);
 
 module.exports = router;

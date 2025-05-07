@@ -82,7 +82,9 @@ exports.verifyOtp = async (req, res) => {
     sendSuccess(res, 'OTP verified successfully', {
       _id: user._id,
       name: user.name,
-      phoneNumber: user.phoneNumber,
+      email: user.email,
+      phone_number: user.phoneNumber,
+      profile_pic: user.profile_pic,
       role: user.role,
       accessToken,
       refreshToken,
