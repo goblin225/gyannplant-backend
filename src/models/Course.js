@@ -24,7 +24,7 @@ const courseSchema = new Schema({
 }, { timestamps: true });
 
 courseSchema.virtual('lessonsCount').get(function() {
-  return this.lessons.length;
+  return this?.lessons?.length;
 });
 
 courseSchema.set('toJSON', { virtuals: true });

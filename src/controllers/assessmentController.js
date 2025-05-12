@@ -134,6 +134,24 @@ exports.createAssessment = async (req, res) => {
     }
 };
 
+exports.getAllAssessments = async (req, res) => {
+    try {
+        const { courseId, isPublished } = req.query;
+        
+        const filter = {};
+        if (courseId) filter.course = courseId;
+        if (isPublished !== undefined) filter.isPublished = isPublished === 'true';
+        
+        const assessments = await Assessment.find(filter)
+            .populate('course', 'name code')
+            .sort({ createdAt: -1 });
+        
+        sendSuccess(res, 'Assessments fetched successfully', assessments);
+    } catch (error) {
+        sendError(res, error);
+    }
+};
+
 exports.submitAssessment = [
     validateAssessment,
     async (req, res) => {
