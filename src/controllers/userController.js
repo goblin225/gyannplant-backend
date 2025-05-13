@@ -32,7 +32,7 @@ exports.getUserById = async (req, res) => {
 exports.updateUserProfile = async (req, res) => {
   try {
 
-    const { id: userId } = req.params;f
+    const { id: userId } = req.params;
     const { name, email, phoneNumber, profile_pic, role } = req.body;
 
     const updateData = {};
