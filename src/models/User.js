@@ -35,8 +35,7 @@ const userSchema = new Schema(
       expiresAt: Date,
     },
     password: {
-      type: String,
-      required: true
+      type: String
     },
   },
   {
