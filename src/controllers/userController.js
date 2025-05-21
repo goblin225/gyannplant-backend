@@ -89,3 +89,13 @@ exports.updateUser = async (req, res) => {
         sendError(res, err);
     }
 };
+
+exports.deleteUser = async (req, res) => {
+    try {
+        const user = await User.findByIdAndDelete(req.params.id);
+        if (!user) return sendErrorMessage(res, 'User not found');
+        sendSuccess(res, 'User deleted successfully');
+    } catch (err) {
+        sendError(res, err);
+    }
+};
