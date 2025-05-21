@@ -17,13 +17,16 @@ exports.createCompany = async (req, res) => {
 
         sendSuccess(res, 'Company created successfully', companyWithoutPassword);
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        sendError(res, err);
     }
 };
 
 exports.getAllCompanies = async (req, res) => {
     try {
-        const companies = await Company.find().sort({ createdAt: -1 });
+        const companies = await Company.find()
+            .select('-password')
+            .sort({ createdAt: -1 });
+
         sendSuccess(res, 'Company fetched successfully', companies);
     } catch (err) {
         sendError(res, err);

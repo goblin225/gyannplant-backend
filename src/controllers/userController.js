@@ -1,6 +1,25 @@
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 const { sendError, sendSuccess } = require('../utils/response');
 
+exports.addUser = async (req, res) => {
+  try {
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const userData = {
+      ...req.body,
+      password: hashedPassword
+    };
+
+    const user = new User(userData);
+    await user.save();
+
+    const { password, ...userWithoutPassword } = user.toObject();
+
+    sendSuccess(res, 'User created successfully', userWithoutPassword);
+  } catch (err) {
+    sendError(res, err);
+  }
+};
 
 exports.getAllUsers = async (req, res) => {
   try {

@@ -34,6 +34,10 @@ const userSchema = new Schema(
       code: String,
       expiresAt: Date,
     },
+    password: {
+      type: String,
+      required: true
+    },
   },
   {
     timestamps: true,
