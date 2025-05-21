@@ -76,3 +76,16 @@ exports.updateUserProfile = async (req, res) => {
     sendError(res, error);
   }
 };
+
+exports.updateUser = async (req, res) => {
+    try {
+        const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true,
+        });
+        if (!user) return sendErrorMessage(res, 'User not found');
+        sendSuccess(res, 'User Updated Successfully', user);
+    } catch (err) {
+        sendError(res, err);
+    }
+};
