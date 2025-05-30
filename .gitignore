@@ -1,5 +1,3 @@
 node_modules
 .env
 dist
-# Ignore service account key
-src/firebase/firebase-service-account.json
