@@ -34,9 +34,11 @@ const userSchema = new Schema(
       code: String,
       expiresAt: Date,
     },
+    fcmToken: { type: String },
     password: {
       type: String
     },
+    completedTasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }]
   },
   {
     timestamps: true,

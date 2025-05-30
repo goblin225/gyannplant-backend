@@ -42,11 +42,10 @@ exports.sendOtp = async (req, res) => {
   }
 };
 
-
 // Verify OTP and Login
 exports.verifyOtp = async (req, res) => {
   try {
-    const { phoneNumber, otp } = req.body;
+    const { phoneNumber, otp, fcmToken } = req.body;
 
     if (!phoneNumber || !otp) {
       return sendErrorMessage(res, 'Phone number and OTP are required');
@@ -59,6 +58,11 @@ exports.verifyOtp = async (req, res) => {
     }
 
     user.otp = undefined;
+
+    if (fcmToken) {
+      user.fcmToken = fcmToken;
+    }
+
     await user.save();
 
     const accessToken = jwt.sign(

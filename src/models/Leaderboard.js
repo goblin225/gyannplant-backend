@@ -1,48 +1,52 @@
-// models/Leaderboard.js
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const leaderboardSchema = new Schema({
-  user: { 
-    type: Schema.Types.ObjectId, 
+  user: {
+    type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true 
+    required: true
   },
-  course: { 
-    type: Schema.Types.ObjectId, 
+  course: {
+    type: Schema.Types.ObjectId,
     ref: 'Course',
-    required: true 
+    required: true
   },
-  points: { 
-    type: Number, 
+  points: {
+    type: Number,
     default: 0,
-    min: 0 
+    min: 0
   },
   completedAssessments: {
     type: Number,
     default: 0,
-    min: 0 
+    min: 0
   },
   averageScore: {
     type: Number,
     default: 0,
     min: 0,
-    max: 100 
+    max: 100
   },
   lastActivity: {
     type: Date,
     default: Date.now
+  },
+  rank: {
+    type: Number,
+    default: 0,
+    min: 0
   }
-}, { 
-  timestamps: true 
+}, {
+  timestamps: true
 });
 
 leaderboardSchema.index({ course: 1, points: -1 });
 leaderboardSchema.index({ user: 1, course: 1 }, { unique: true });
 
-leaderboardSchema.statics.updateStats = async function(userId, courseId) {
+leaderboardSchema.statics.updateStats = async function (userId, courseId) {
   const UserProgress = mongoose.model('UserProgress');
-  
+
   const [progress, attempts] = await Promise.all([
     UserProgress.findOne({ user: userId, course: courseId }),
     this.aggregate([
@@ -54,11 +58,11 @@ leaderboardSchema.statics.updateStats = async function(userId, courseId) {
   if (!progress) return;
 
   const passedAssessments = progress.assessments.filter(a => a.passed).length;
-  const avgScore = progress.assessments.length > 0 
-    ? progress.assessments.reduce((sum, a) => sum + (a.score/a.totalMarks)*100, 0) / progress.assessments.length
+  const avgScore = progress.assessments.length > 0
+    ? progress.assessments.reduce((sum, a) => sum + (a.score / a.totalMarks) * 100, 0) / progress.assessments.length
     : 0;
 
-  return this.findOneAndUpdate(
+  await this.findOneAndUpdate(
     { user: userId, course: courseId },
     {
       points: progress.points,
@@ -69,6 +73,17 @@ leaderboardSchema.statics.updateStats = async function(userId, courseId) {
     },
     { upsert: true, new: true }
   );
+
+  await this.recalculateRanks(courseId);
+};
+
+leaderboardSchema.statics.recalculateRanks = async function (courseId) {
+  const leaders = await this.find({ course: courseId }).sort({ points: -1 });
+
+  for (let i = 0; i < leaders.length; i++) {
+    leaders[i].rank = i + 1;
+    await leaders[i].save();
+  }
 };
 
 module.exports = mongoose.model('Leaderboard', leaderboardSchema);

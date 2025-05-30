@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
-const { sendError, sendSuccess } = require('../utils/response');
+const { sendError, sendSuccess, sendErrorMessage } = require('../utils/response');
 
 exports.addUser = async (req, res) => {
   try {
