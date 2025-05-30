@@ -1,3 +1,6 @@
 node_modules
 .env
 dist
+
+# Firebase secret file
+src/firebase/firebase-service-account.json
