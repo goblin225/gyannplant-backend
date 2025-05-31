@@ -34,8 +34,6 @@ exports.sendOtp = async (req, res) => {
 
     await user.save();
 
-    console.log(`OTP sent to ${phoneNumber}: ${STATIC_OTP}`);
-
     return sendSuccess(res, 'OTP sent successfully', { phoneNumber });
   } catch (error) {
     sendError(res, error);

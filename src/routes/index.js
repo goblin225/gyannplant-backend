@@ -11,6 +11,7 @@ const leaderRoutes = require('./leaderBoard');
 const taskRoutes = require('./task');
 const taskProgressRoutes = require('./taskProgress');
 const attendanceRoutes = require('./attendance');
+const notificationRoutes = require('./notification');
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use('/leader', leaderRoutes);
 router.use('/task', taskRoutes);
 router.use('/taskprogress', taskProgressRoutes);
 router.use('/attendance', attendanceRoutes);
+router.use('/notifi', notificationRoutes);
 
 module.exports = router;

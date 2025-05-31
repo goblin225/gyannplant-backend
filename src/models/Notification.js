@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const NotificationSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  taskId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task' },
   title: String,
   message: String,
   type: { type: String, enum: ['assignment', 'expiry'], default: 'assignment' },
