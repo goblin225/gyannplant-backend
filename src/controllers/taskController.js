@@ -3,86 +3,98 @@ const TaskProgress = require('../models/TaskProgress');
 const Course = require('../models/Course');
 const Assessment = require('../models/Assessment');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const admin = require('../utils/firebase')
-const { sendSuccess, sendError } = require('../utils/response');
+const { sendSuccess, sendError } = require('../utils/response')
 
 exports.createTask = async (req, res) => {
-    try {
-        const {
-            title,
-            description,
-            category,
-            deadlineHours,
-            points,
-            steps,
-            assignedTo,
-            createdBy,
-            courseId
-        } = req.body;
+  try {
 
-        const task = new Task({
-            title,
-            description,
-            category,
-            deadlineHours,
-            points,
-            steps,
-            assignedTo,
-            createdBy,
-            courseId
-        });
+    const {
+      title,
+      description,
+      category,
+      deadlineHours,
+      points,
+      steps,
+      assignedTo,
+      createdBy,
+      courseId
+    } = req.body;
 
-        await task.save();
+    const task = new Task({
+      title,
+      description,
+      category,
+      deadlineHours,
+      points,
+      steps,
+      assignedTo,
+      createdBy,
+      courseId
+    });
 
-        const taskProgressEntries = assignedTo.map(userId => ({
-            taskId: task._id,
-            userId,
-            courseId: task.courseId,
-            stepLog: steps.map(step => ({
-                stepTitle: step.title,
-                type: step.type,
-                lessonId: step.lessonId || null,
-                assessmentId: step.assessmentId || null,
-                completed: false,
-                watchedDuration: 0,
-                totalDuration: step.type === 'video' ? 0 : undefined
-            }))
-        }));
+    await task.save();
 
-        await TaskProgress.insertMany(taskProgressEntries);
+    const taskProgressEntries = assignedTo.map(userId => ({
+      taskId: task._id,
+      userId,
+      courseId: task.courseId,
+      stepLog: steps.map(step => ({
+        stepTitle: step.title,
+        type: step.type,
+        lessonId: step.lessonId || null,
+        assessmentId: step.assessmentId || null,
+        completed: false,
+        watchedDuration: 0,
+        totalDuration: step.type === 'video' ? 0 : undefined
+      }))
+    }));
 
-        const users = await User.find({
-            _id: { $in: assignedTo },
-            fcmToken: { $exists: true, $ne: null }
-        });
+    await TaskProgress.insertMany(taskProgressEntries);
 
-        for (const user of users) {
-            const notificationData = {
-                userId: user._id,
-                title: "New Task Assigned",
-                message: `${task.title}: ${task.description}`,
-                type: 'assignment'
-            };
+    const users = await User.find({
+      _id: { $in: assignedTo },
+      fcmToken: { $exists: true, $ne: null }
+    });
 
-            const savedNotification = new Notification(notificationData);
-            await savedNotification.save();
+    const notificationResults = [];
 
-            const fcmMessage = {
-                notification: {
-                    title: notificationData.title,
-                    body: notificationData.message
-                },
-                token: user.fcmToken
-            };
+    for (const user of users) {
+      const notificationData = {
+        userId: user._id,
+        taskId: task._id,
+        title: "New Task Assigned",
+        message: `${task.title}: ${task.description}`,
+        type: 'assignment'
+      };
 
-            await admin.messaging().send(fcmMessage);
-        }
+      const savedNotification = new Notification(notificationData);
+      await savedNotification.save();
 
-        sendSuccess(res, 'Task created and notifications sent successfully', task);
-    } catch (err) {
-        console.error(err);
-        sendError(res, `Error creating task: ${err.message || err}`);
+      const fcmMessage = {
+        notification: {
+          title: notificationData.title,
+          body: notificationData.message
+        },
+        token: user.fcmToken
+      };
+
+      await admin.messaging().send(fcmMessage);
+
+      notificationResults.push(notificationData);
     }
+
+    sendSuccess(res, 'Task created and notifications sent successfully', {
+      task,
+      progress: taskProgressEntries,
+      notifications: notificationResults
+    });
+
+  } catch (err) {
+    console.error("Error during task creation:", err);
+    sendError(res, `Error creating task: ${err.message || err}`);
+  }
 };
 
 exports.getAllTasks = async (req, res) => {
@@ -143,19 +155,19 @@ exports.getAllTasks = async (req, res) => {
 };
 
 exports.deleteTask = async (req, res) => {
-    try {
-        const { taskId } = req.params;
+  try {
+    const { taskId } = req.params;
 
-        const task = await Task.findByIdAndDelete(taskId);
+    const task = await Task.findByIdAndDelete(taskId);
 
-        if (!task) {
-            return sendError(res, 'Task not found');
-        }
-
-        // await TaskProgress.deleteMany({ taskId: id });
-
-        sendSuccess(res, 'Task deleted successfully', task);
-    } catch (err) {
-        sendError(res, 'Error deleting task', err);
+    if (!task) {
+      return sendError(res, 'Task not found');
     }
+
+    // await TaskProgress.deleteMany({ taskId: id });
+
+    sendSuccess(res, 'Task deleted successfully', task);
+  } catch (err) {
+    sendError(res, 'Error deleting task', err);
+  }
 };

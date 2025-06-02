@@ -3,6 +3,7 @@ const { Schema } = mongoose;
 
 const userSchema = new Schema(
   {
+    collegeId: { type: mongoose.Schema.Types.ObjectId, ref: 'College' },
     name: {
       type: String
     },
@@ -17,9 +18,7 @@ const userSchema = new Schema(
         message: 'Invalid email format',
       },
     },
-    role: {
-      type: String
-    },
+    roleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Role' },
     phoneNumber: {
       type: String,
       required: [true, 'Phone number is required'],

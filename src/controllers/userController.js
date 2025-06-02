@@ -25,7 +25,9 @@ exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find()
       .sort({ createdAt: -1 })
-      .select('-password');
+      .select('-password')
+      .populate('collegeId', 'collegeName mailId contactNumber address contactPersonName')
+      .populate('roleId', 'name');
 
     sendSuccess(res, 'Users fetched successfully', users);
   } catch (error) {
@@ -36,7 +38,8 @@ exports.getAllUsers = async (req, res) => {
 exports.getUserById = async (req, res) => {
   try {
     const userId = req.params.id;
-    const user = await User.findById(userId).select('-password');
+    const user = await User.findById(userId).select('-password')
+    .populate('roleId', 'name');
 
     if (!user) {
       return sendErrorMessage(res, 'User not found');
@@ -78,24 +81,24 @@ exports.updateUserProfile = async (req, res) => {
 };
 
 exports.updateUser = async (req, res) => {
-    try {
-        const user = await User.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            runValidators: true,
-        });
-        if (!user) return sendErrorMessage(res, 'User not found');
-        sendSuccess(res, 'User Updated Successfully', user);
-    } catch (err) {
-        sendError(res, err);
-    }
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!user) return sendErrorMessage(res, 'User not found');
+    sendSuccess(res, 'User Updated Successfully', user);
+  } catch (err) {
+    sendError(res, err);
+  }
 };
 
 exports.deleteUser = async (req, res) => {
-    try {
-        const user = await User.findByIdAndDelete(req.params.id);
-        if (!user) return sendErrorMessage(res, 'User not found');
-        sendSuccess(res, 'User deleted successfully');
-    } catch (err) {
-        sendError(res, err);
-    }
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return sendErrorMessage(res, 'User not found');
+    sendSuccess(res, 'User deleted successfully');
+  } catch (err) {
+    sendError(res, err);
+  }
 };

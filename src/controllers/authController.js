@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { sendCreated, sendErrorMessage, sendError, sendSuccess } = require('../utils/response');
@@ -122,4 +122,43 @@ exports.refreshToken = (req, res) => {
   });
 
   sendSuccess({ message: 'Token refreshed', accessToken: newAccessToken });
+};
+
+// Auth Admin login
+
+exports.adminLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email }).populate('roleId');
+    if (!user) return sendErrorMessage(res, 'User not found');
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return sendErrorMessage(res, 'Invalid password');
+
+    const accessToken = jwt.sign(
+      { id: user._id, role: user.roleId?.name },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: user._id, refresh: true },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    const loginData = {
+      accessToken,
+      refreshToken,
+      _id: user._id,
+      phoneNumber: user.phoneNumber,
+      roleId: user.roleId?._id || null,
+      roleName: user.roleId?.name || null,
+    };
+
+    sendSuccess(res, 'Login successful', loginData);
+  } catch (err) {
+    res.status(500).json({ message: 'Login failed', error: err.message });
+  }
 };

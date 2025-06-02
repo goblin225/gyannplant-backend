@@ -6,6 +6,8 @@ exports.getUserNotifications = async (req, res) => {
   try {
     const { userId } = req.params;
 
+    // await Notification.deleteMany()
+
     const notifications = await Notification.find({ userId })
       .sort({ createdAt: -1 })
       .populate('taskId')

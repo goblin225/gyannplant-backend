@@ -12,6 +12,10 @@ const taskRoutes = require('./task');
 const taskProgressRoutes = require('./taskProgress');
 const attendanceRoutes = require('./attendance');
 const notificationRoutes = require('./notification');
+const collegeRoutes = require('./authCollege');
+const jobRoutes = require('./job');
+const applicationRoutes = require('./application');
+
 
 const router = Router();
 
@@ -28,5 +32,8 @@ router.use('/task', taskRoutes);
 router.use('/taskprogress', taskProgressRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/notifi', notificationRoutes);
+router.use('/auth/college', collegeRoutes);
+router.use('/job', jobRoutes);
+router.use('/application', applicationRoutes);
 
 module.exports = router;
