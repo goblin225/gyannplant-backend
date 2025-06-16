@@ -115,13 +115,15 @@ exports.createAssessment = async (req, res) => {
     const { course, title, questions,
       maxAttempts,
       isPublished,
-      availableFrom,
+      availableFrom,totalMarks,
       availableTo, } = req.body;
 
+      console.log('asses',req.body);
+      
     const assessment = new Assessment({
       course,
       title,
-      questions,
+      questions,totalMarks,
       maxAttempts,
       isPublished,
       availableFrom: availableFrom ? new Date(availableFrom) : undefined,
