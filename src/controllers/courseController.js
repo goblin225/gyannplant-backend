@@ -60,7 +60,7 @@ exports.getCourseById = async (req, res) => {
 
 exports.editCourse = async (req, res) => {
     try {
-        const { _id: courseId } = req.params;
+        const { courseId } = req.params;
         const updatedData = req.body;
 
         const course = await Course.findByIdAndUpdate(courseId, updatedData, { new: true });
