@@ -21,7 +21,8 @@ const taskSchema = new mongoose.Schema({
   status: { type: String, enum: ['Active', 'Expired'], default: 'Active' },
   startTime: { type: Date, default: Date.now },
   expiryTime: { type: Date },
-  courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' }
+  courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
+  taskDate: { type: Date, required: true }
 }, { timestamps: true });
 
 taskSchema.pre('save', function (next) {

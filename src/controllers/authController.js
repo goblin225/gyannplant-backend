@@ -149,12 +149,15 @@ exports.adminLogin = async (req, res) => {
     );
 
     const loginData = {
-      accessToken,
-      refreshToken,
       _id: user._id,
+      name: user?.name,
+      email: user?.email,
       phoneNumber: user.phoneNumber,
+      profile_pic: user?.profile_pic,
       roleId: user.roleId?._id || null,
       roleName: user.roleId?.name || null,
+      accessToken,
+      refreshToken,
     };
 
     sendSuccess(res, 'Login successful', loginData);

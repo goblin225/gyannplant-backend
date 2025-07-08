@@ -1,3 +1,4 @@
+const moment = require('moment');
 const Task = require('../models/Task');
 const TaskProgress = require('../models/TaskProgress');
 const Course = require('../models/Course');
@@ -9,7 +10,6 @@ const { sendSuccess, sendError } = require('../utils/response')
 
 exports.createTask = async (req, res) => {
   try {
-
     const {
       title,
       description,
@@ -17,78 +17,105 @@ exports.createTask = async (req, res) => {
       deadlineHours,
       points,
       steps,
-      assignedTo,
       createdBy,
-      courseId
+      courseId,
+      repeatType,
+      repeatDays = [],
+      startDate,
+      endDate
     } = req.body;
 
-    const task = new Task({
-      title,
-      description,
-      category,
-      deadlineHours,
-      points,
-      steps,
-      assignedTo,
-      createdBy,
-      courseId
-    });
+    // Fetch all active users
+    const users = await User.find({ isActive: true });
+    const userIds = users.map(u => u._id);
 
-    await task.save();
+    // Initialize current day loop
+    const current = moment(startDate);
+    const end = moment(endDate);
 
-    const taskProgressEntries = assignedTo.map(userId => ({
-      taskId: task._id,
-      userId,
-      courseId: task.courseId,
-      stepLog: steps.map(step => ({
-        stepTitle: step.title,
-        type: step.type,
-        lessonId: step.lessonId || null,
-        assessmentId: step.assessmentId || null,
-        completed: false,
-        watchedDuration: 0,
-        totalDuration: step.type === 'video' ? 0 : undefined
-      }))
-    }));
+    const tasks = [];
+    const taskProgressEntries = [];
+    const notifications = [];
 
-    await TaskProgress.insertMany(taskProgressEntries);
+    // Iterate through each date in the range
+    while (current.isSameOrBefore(end, 'day')) {
+      const dayOfWeek = current.day();
+      const shouldCreate =
+        repeatType === 'daily' ||
+        (repeatType === 'custom' && repeatDays.includes(dayOfWeek));
 
-    const users = await User.find({
-      _id: { $in: assignedTo },
-      fcmToken: { $exists: true, $ne: null }
-    });
+      if (shouldCreate) {
+        for (const user of users) {
+          const task = new Task({
+            title,
+            description,
+            category,
+            deadlineHours,
+            points,
+            steps,
+            assignedTo: [user._id],
+            createdBy,
+            courseId,
+            taskDate: current.toDate()
+          });
 
-    const notificationResults = [];
+          await task.save();
+          tasks.push(task);
 
-    for (const user of users) {
-      const notificationData = {
-        userId: user._id,
-        taskId: task._id,
-        title: "New Task Assigned",
-        message: `${task.title}: ${task.description}`,
-        type: 'assignment'
-      };
+          const stepLog = steps.map(step => ({
+            stepTitle: step.title,
+            type: step.type,
+            lessonId: step.lessonId || null,
+            assessmentId: step.assessmentId || null,
+            completed: false,
+            watchedDuration: 0,
+            totalDuration: step.type === 'video' ? 0 : undefined
+          }));
 
-      const savedNotification = new Notification(notificationData);
-      await savedNotification.save();
+          taskProgressEntries.push({
+            taskId: task._id,
+            userId: user._id,
+            courseId: task.courseId,
+            stepLog
+          });
 
-      const fcmMessage = {
-        notification: {
-          title: notificationData.title,
-          body: notificationData.message
-        },
-        token: user.fcmToken
-      };
+          if (user.fcmToken) {
+            const notificationData = {
+              userId: user._id,
+              taskId: task._id,
+              title: 'New Task Assigned',
+              message: `${task.title} for ${current.format('MMM D')}: ${task.description}`,
+              type: 'assignment'
+            };
 
-      await admin.messaging().send(fcmMessage);
+            const savedNotification = new Notification(notificationData);
+            await savedNotification.save();
 
-      notificationResults.push(notificationData);
+            const fcmMessage = {
+              notification: {
+                title: notificationData.title,
+                body: notificationData.message
+              },
+              token: user.fcmToken
+            };
+
+            await admin.messaging().send(fcmMessage);
+            notifications.push(notificationData);
+          }
+        }
+      }
+
+      current.add(1, 'day');
     }
 
-    sendSuccess(res, 'Task created and notifications sent successfully', {
-      task,
-      progress: taskProgressEntries,
-      notifications: notificationResults
+    if (taskProgressEntries.length > 0) {
+      await TaskProgress.insertMany(taskProgressEntries);
+    }
+
+    sendSuccess(res, 'Recurring tasks created and notifications sent successfully', {
+      totalTasks: tasks.length,
+      totalProgressEntries: taskProgressEntries.length,
+      totalNotifications: notifications.length
     });
 
   } catch (err) {

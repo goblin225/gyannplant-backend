@@ -117,8 +117,6 @@ exports.createAssessment = async (req, res) => {
       isPublished,
       availableFrom,totalMarks,
       availableTo, } = req.body;
-
-      console.log('asses',req.body);
       
     const assessment = new Assessment({
       course,

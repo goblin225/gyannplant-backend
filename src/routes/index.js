@@ -15,7 +15,8 @@ const notificationRoutes = require('./notification');
 const collegeRoutes = require('./authCollege');
 const jobRoutes = require('./job');
 const applicationRoutes = require('./application');
-
+const enrollRoutes = require('./enrollment');
+const lessonProgressRoutes = require('./lessonProgress');
 
 const router = Router();
 
@@ -35,5 +36,7 @@ router.use('/notifi', notificationRoutes);
 router.use('/auth/college', collegeRoutes);
 router.use('/job', jobRoutes);
 router.use('/application', applicationRoutes);
+router.use('/enroll', enrollRoutes);
+router.use('/lessonproress', lessonProgressRoutes);
 
 module.exports = router;
