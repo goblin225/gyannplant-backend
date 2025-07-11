@@ -11,6 +11,6 @@ router.post('/send-otp',
 );
 
 router.post('/verify-otp', verifyOtp);
-router.post('/admin-login', adminLogin);
+router.post('/login', adminLogin);
 
 module.exports = router;
