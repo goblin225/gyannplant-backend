@@ -17,6 +17,7 @@ const jobRoutes = require('./job');
 const applicationRoutes = require('./application');
 const enrollRoutes = require('./enrollment');
 const lessonProgressRoutes = require('./lessonProgress');
+const resumeRoutes = require('./resume');
 
 const router = Router();
 
@@ -38,5 +39,6 @@ router.use('/job', jobRoutes);
 router.use('/application', applicationRoutes);
 router.use('/enroll', enrollRoutes);
 router.use('/lessonproress', lessonProgressRoutes);
+router.use('/resume', resumeRoutes);
 
 module.exports = router;
