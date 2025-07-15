@@ -13,6 +13,7 @@ connectDB();
 
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:5174',
   'https://gyaan-plant-website.onrender.com',
   'https://gyaanplant-admin-panel.onrender.com/',
 ];
