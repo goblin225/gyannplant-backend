@@ -37,7 +37,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
-// Rate limiter for all /api routes
+// Rate limiter
 const apiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 20,
