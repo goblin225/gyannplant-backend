@@ -4,6 +4,7 @@ const connectDB = require('./config/database');
 const router = require('./routes');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const rateLimit = require("express-rate-limit");
 
 const app = express();
 
@@ -34,6 +35,19 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
+
+// Rate limiter for all /api routes
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 20,
+  message: {
+    success: false,
+    status: 429,
+    message: 'Too many requests. Please try again after a minute.',
+  },
+});
+app.use('/api', apiLimiter);
+
 app.use('/api', router)
 
 const PORT = process.env.PORT || 9000;
