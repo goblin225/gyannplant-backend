@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { createLeaderboard, getCategory } = require('../controllers/leaderBoardController');
+const { createLeaderboard, getLeaderboard } = require('../controllers/leaderBoardController');
 
 router.post('/create-leader', createLeaderboard);
-// router.get('/get-category', getCategory);
+router.get('/get-leader', getLeaderboard);
 
 module.exports = router;

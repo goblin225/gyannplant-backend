@@ -34,3 +34,25 @@ exports.createLeaderboard = async (req, res) => {
     sendError(res, 'Internal Server Error', 500, err.message || err);
   }
 };
+
+
+exports.getLeaderboard = async (req, res) => {
+  try {
+    const { user: userId } = req.query;
+
+    let filter = {};
+    if (userId) {
+      filter.user = userId;
+    }
+
+    const leaderboardData = await Leaderboard.find(filter)
+      .populate('user', '-password')   // if using Mongoose and user ref
+      .populate('course')              // populate course details if needed
+      .sort({ points: -1 });           // optional: sort by points
+
+    sendSuccess(res, 'Leaderboard data fetched successfully.', leaderboardData);
+  } catch (err) {
+    console.error('Failed to fetch leaderboard:', err);
+    sendError(res, 'Internal Server Error', 500, err.message || err);
+  }
+};
