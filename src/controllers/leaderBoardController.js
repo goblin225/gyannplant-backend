@@ -35,7 +35,6 @@ exports.createLeaderboard = async (req, res) => {
   }
 };
 
-
 exports.getLeaderboard = async (req, res) => {
   try {
     const { user: userId, courseId } = req.query;

@@ -1,42 +1,15 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
+const UserProgress = require('./UserCourseProgress');
 
 const leaderboardSchema = new Schema({
-  user: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  course: {
-    type: Schema.Types.ObjectId,
-    ref: 'Course',
-    required: true
-  },
-  points: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
-  completedAssessments: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
-  averageScore: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 100
-  },
-  lastActivity: {
-    type: Date,
-    default: Date.now
-  },
-  rank: {
-    type: Number,
-    default: 0,
-    min: 0
-  }
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  course: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
+  points: { type: Number, default: 0, min: 0 },
+  completedAssessments: { type: Number, default: 0, min: 0 },
+  averageScore: { type: Number, default: 0, min: 0, max: 100 },
+  lastActivity: { type: Date, default: Date.now },
+  rank: { type: Number, default: 0, min: 0 }
 }, {
   timestamps: true
 });
@@ -45,10 +18,8 @@ leaderboardSchema.index({ course: 1, points: -1 });
 leaderboardSchema.index({ user: 1, course: 1 }, { unique: true });
 
 leaderboardSchema.statics.updateStats = async function (userId, courseId) {
-  const UserProgress = mongoose.model('UserProgress');
-
   const [progress, attempts] = await Promise.all([
-    UserProgress.findOne({ user: userId, course: courseId }),
+    UserProgress.findOne({ userId: userId, courseId: courseId }),
     this.aggregate([
       { $match: { course: courseId } },
       { $group: { _id: null, avgPoints: { $avg: "$points" } } }

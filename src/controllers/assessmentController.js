@@ -302,7 +302,6 @@ exports.getAllAssessments = async (req, res) => {
 //   }
 // };
 
-
 exports.submitAssessment = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -311,13 +310,11 @@ exports.submitAssessment = async (req, res) => {
     const { assessmentId } = req.params;
     const { userId, answers } = req.body;
 
-    // Validate IDs
     if (!mongoose.Types.ObjectId.isValid(assessmentId) || !mongoose.Types.ObjectId.isValid(userId)) {
       await session.abortTransaction();
       return res.status(400).json({ error: 'Invalid ID format' });
     }
 
-    // Get assessment and course
     const assessment = await Assessment.findById(assessmentId)
       .populate('course', '_id title')
       .session(session);
@@ -327,7 +324,6 @@ exports.submitAssessment = async (req, res) => {
       return res.status(404).json({ error: 'Assessment or associated course not found' });
     }
 
-    // Check availability
     const now = new Date();
     if (!assessment.isPublished ||
       (assessment.availableFrom && now < assessment.availableFrom) ||
@@ -336,7 +332,6 @@ exports.submitAssessment = async (req, res) => {
       return res.status(403).json({ error: 'Assessment is not currently available' });
     }
 
-    // Check attempts
     const userProgress = await UserCourseProgress.findOne({
       userId: userId,
       courseId: assessment.course._id
@@ -351,7 +346,6 @@ exports.submitAssessment = async (req, res) => {
       return res.status(403).json({ error: `Maximum attempts (${assessment.maxAttempts}) exceeded` });
     }
 
-    // Validate question IDs
     const questionIds = assessment.questions.map(q => q._id.toString());
     const invalidAnswers = answers.filter(a => !questionIds.includes(a.questionId));
     if (invalidAnswers.length > 0) {
@@ -359,7 +353,6 @@ exports.submitAssessment = async (req, res) => {
       return res.status(400).json({ error: 'Some answers refer to invalid questions' });
     }
 
-    // Calculate score
     const scoreDetails = assessment.questions.map(question => {
       const userAnswer = answers.find(a => a.questionId === question._id.toString());
       const selected = userAnswer?.selectedOption || null;
@@ -377,7 +370,6 @@ exports.submitAssessment = async (req, res) => {
     const percentage = Math.round((totalScore / assessment.totalMarks) * 100);
     const passed = percentage >= assessment.passPercentage;
 
-    // Update UserCourseProgress
     await UserCourseProgress.findOneAndUpdate(
       { userId: userId, courseId: assessment.course._id },
       {
@@ -393,13 +385,11 @@ exports.submitAssessment = async (req, res) => {
         $inc: { points: passed ? percentage : 0 },
         $set: { lastActive: new Date() }
       },
-      { session, new: true }
+      { session, new: true, upsert: true }
     );
 
-    // Update Leaderboard if passed
-
     if (passed) {
-      await Leaderboard.updateStats(userId, assessment.course._id);
+      await Leaderboard.updateStats(userId, assessment.course._id, session);
     }
 
     await session.commitTransaction();
