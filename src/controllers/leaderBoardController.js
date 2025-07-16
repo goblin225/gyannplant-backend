@@ -50,6 +50,7 @@ exports.getLeaderboard = async (req, res) => {
 
     const formattedData = leaderboardData.map(entry => ({
       _id: entry._id,
+      userId: entry.user?._id || '',
       name: entry.user?.name || '',
       email: entry.user?.email || '',
       profile_pic: entry.user?.profile_pic || '',
