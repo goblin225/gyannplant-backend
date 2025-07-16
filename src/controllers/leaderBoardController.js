@@ -38,21 +38,30 @@ exports.createLeaderboard = async (req, res) => {
 
 exports.getLeaderboard = async (req, res) => {
   try {
-    const { user: userId } = req.query;
+    const { user: userId, courseId } = req.query;
 
-    let filter = {};
-    if (userId) {
-      filter.user = userId;
-    }
+    const filter = {};
+    if (userId) filter.user = userId;
+    if (courseId) filter.course = courseId;
 
     const leaderboardData = await Leaderboard.find(filter)
-      .populate('user', '-password')   // if using Mongoose and user ref
-      .populate('course')              // populate course details if needed
-      .sort({ points: -1 });           // optional: sort by points
+      .populate('user', '-password')
+      .populate('course', 'title')
+      .sort({ rank: 1 });
 
-    sendSuccess(res, 'Leaderboard data fetched successfully.', leaderboardData);
+    return res.status(200).json({
+      success: true,
+      message: 'Leaderboard data fetched successfully.',
+      statusCode: 200,
+      data: leaderboardData
+    });
   } catch (err) {
     console.error('Failed to fetch leaderboard:', err);
-    sendError(res, 'Internal Server Error', 500, err.message || err);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal Server Error',
+      statusCode: 500,
+      error: err.message
+    });
   }
 };

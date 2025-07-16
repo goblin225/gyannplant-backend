@@ -115,13 +115,13 @@ exports.createAssessment = async (req, res) => {
     const { course, title, questions,
       maxAttempts,
       isPublished,
-      availableFrom,totalMarks,
+      availableFrom, totalMarks,
       availableTo, } = req.body;
-      
+
     const assessment = new Assessment({
       course,
       title,
-      questions,totalMarks,
+      questions, totalMarks,
       maxAttempts,
       isPublished,
       availableFrom: availableFrom ? new Date(availableFrom) : undefined,
@@ -329,20 +329,20 @@ exports.submitAssessment = async (req, res) => {
 
     // Check availability
     const now = new Date();
-    if (!assessment.isPublished || 
-        (assessment.availableFrom && now < assessment.availableFrom) || 
-        (assessment.availableTo && now > assessment.availableTo)) {
+    if (!assessment.isPublished ||
+      (assessment.availableFrom && now < assessment.availableFrom) ||
+      (assessment.availableTo && now > assessment.availableTo)) {
       await session.abortTransaction();
       return res.status(403).json({ error: 'Assessment is not currently available' });
     }
 
     // Check attempts
-    const userProgress = await UserCourseProgress.findOne({ 
-      userId: userId, 
-      courseId: assessment.course._id 
+    const userProgress = await UserCourseProgress.findOne({
+      userId: userId,
+      courseId: assessment.course._id
     }).session(session);
 
-    const attempts = userProgress?.assessments?.filter(a => 
+    const attempts = userProgress?.assessments?.filter(a =>
       a.assessmentId.equals(assessmentId)
     ).length || 0;
 
@@ -397,24 +397,21 @@ exports.submitAssessment = async (req, res) => {
     );
 
     // Update Leaderboard if passed
+
     if (passed) {
-      await Leaderboard.findOneAndUpdate(
-        { user: userId },
-        { $inc: { totalPoints: percentage } },
-        { upsert: true, session }
-      );
+      await Leaderboard.updateStats(userId, assessment.course._id);
     }
 
     await session.commitTransaction();
 
     return sendSuccess(res, 'Assessment submitted successfully', {
-  score: totalScore,
-  totalMarks: assessment.totalMarks,
-  percentage,
-  passed,
-  attemptsRemaining: assessment.maxAttempts - (attempts + 1),
-  pointsEarned: passed ? percentage : 0
-});
+      score: totalScore,
+      totalMarks: assessment.totalMarks,
+      percentage,
+      passed,
+      attemptsRemaining: assessment.maxAttempts - (attempts + 1),
+      pointsEarned: passed ? percentage : 0
+    });
   } catch (error) {
     await session.abortTransaction();
     console.error('Submission error:', error);
