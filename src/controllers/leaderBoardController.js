@@ -48,19 +48,31 @@ exports.getLeaderboard = async (req, res) => {
       .populate('course', 'title')
       .sort({ rank: 1 });
 
-    return res.status(200).json({
-      success: true,
-      message: 'Leaderboard data fetched successfully.',
-      statusCode: 200,
-      data: leaderboardData
-    });
+    const formattedData = leaderboardData.map(entry => ({
+      _id: entry._id,
+      name: entry.user?.name || '',
+      email: entry.user?.email || '',
+      profile_pic: entry.user?.profile_pic || '',
+      level: entry.level,
+      exp: entry.exp,
+      points: entry.points,
+      courseTitle: entry.course?.title || '',
+      completedCourses: entry.completedAssessments,
+      averageScore: entry.averageScore,
+      rank: entry.rank,
+      percentile: entry.percentile,
+      quizzesPlayed: entry.quizzesPlayed,
+      quizzesWon: entry.quizzesWon,
+      badges: entry.badges?.map(b => ({
+        type: b.badgeType,
+        unlocked: b.unlocked,
+        earnedAt: b.earnedAt
+      })) || []
+    }));
+
+    return sendSuccess(res, 'Leaderboard data fetched successfully.', formattedData);
   } catch (err) {
     console.error('Failed to fetch leaderboard:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal Server Error',
-      statusCode: 500,
-      error: err.message
-    });
+    return sendError(res, 'Internal Server Error', 500, err.message);
   }
 };
