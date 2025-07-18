@@ -48,27 +48,61 @@ exports.getLeaderboard = async (req, res) => {
       .populate('course', 'title')
       .sort({ rank: 1 });
 
-    const formattedData = leaderboardData.map(entry => ({
-      _id: entry._id,
-      userId: entry.user?._id || '',
-      name: entry.user?.name || '',
-      email: entry.user?.email || '',
-      profile_pic: entry.user?.profile_pic || '',
-      level: entry.level,
-      exp: entry.exp,
-      points: entry.points,
-      courseTitle: entry.course?.title || '',
-      completedCourses: entry.completedAssessments,
-      averageScore: entry.averageScore,
-      rank: entry.rank,
-      percentile: entry.percentile,
-      quizzesPlayed: entry.quizzesPlayed,
-      quizzesWon: entry.quizzesWon,
-      badges: entry.badges?.map(b => ({
-        type: b.badgeType,
-        unlocked: b.unlocked,
-        earnedAt: b.earnedAt
-      })) || []
+    const userMap = {};
+
+    leaderboardData.forEach(entry => {
+      const uid = entry.user?._id?.toString();
+      if (!uid) return;
+
+      if (!userMap[uid]) {
+        userMap[uid] = {
+          userId: uid,
+          _id: entry._id,
+          name: entry.user?.name || '',
+          email: entry.user?.email || '',
+          profile_pic: entry.user?.profile_pic || '',
+          level: entry.level,
+          exp: entry.exp,
+          points: entry.points,
+          courses: [],
+          completedCourses: 0,
+          totalScore: 0,
+          scoreCount: 0,
+          rank: entry.rank,
+          percentile: entry.percentile,
+          quizzesPlayed: entry.quizzesPlayed,
+          quizzesWon: entry.quizzesWon,
+          badges: entry.badges?.map(b => ({
+            type: b.badgeType,
+            unlocked: b.unlocked,
+            earnedAt: b.earnedAt
+          })) || []
+        };
+      }
+
+      userMap[uid].courses.push(entry.course?.title || '');
+      userMap[uid].completedCourses += entry.completedAssessments || 0;
+      userMap[uid].totalScore += entry.averageScore || 0;
+      userMap[uid].scoreCount += 1;
+    });
+
+    const formattedData = Object.values(userMap).map(user => ({
+      userId: user.userId,
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      profile_pic: user.profile_pic,
+      level: user.level,
+      exp: user.exp,
+      points: user.points,
+      courseTitles: user.courses,
+      completedCourses: user.completedCourses,
+      averageScore: user.scoreCount > 0 ? (user.totalScore / user.scoreCount) : 0,
+      rank: user.rank,
+      percentile: user.percentile,
+      quizzesPlayed: user.quizzesPlayed,
+      quizzesWon: user.quizzesWon,
+      badges: user.badges
     }));
 
     return sendSuccess(res, 'Leaderboard data fetched successfully.', formattedData);
