@@ -112,24 +112,34 @@ exports.uploadAssessmentFromFile = async (req, res) => {
 
 exports.createAssessment = async (req, res) => {
   try {
-    const { course, title, questions,
-      maxAttempts,
-      isPublished,
-      availableFrom, totalMarks,
-      availableTo, } = req.body;
-
-    const assessment = new Assessment({
+    const {
+      type,
       course,
       title,
-      questions, totalMarks,
+      questions,
+      passPercentage,
       maxAttempts,
+      isPublished,
+      availableFrom,
+      availableTo,
+      timeLimit
+    } = req.body;
+
+    const assessment = new Assessment({
+      type,
+      course,
+      title,
+      questions,
+      passPercentage,
+      maxAttempts,
+      timeLimit,
       isPublished,
       availableFrom: availableFrom ? new Date(availableFrom) : undefined,
       availableTo: availableTo ? new Date(availableTo) : undefined
     });
 
     await assessment.save();
-    sendSuccess(res, 'Assessment created', assessment);
+    sendSuccess(res, 'Assessment created successfully', assessment);
   } catch (error) {
     sendError(res, error);
   }
@@ -153,155 +163,6 @@ exports.getAllAssessments = async (req, res) => {
   }
 };
 
-// exports.submitAssessment = async (req, res) => {
-//   const session = await mongoose.startSession();
-//   session.startTransaction();
-
-//   try {
-//     const { assessmentId } = req.params;
-//     const { userId, answers } = req.body;
-//     consolelog(userId,answers)
-
-//     // Validate IDs
-//     if (!mongoose.Types.ObjectId.isValid(assessmentId)) {
-//       await session.abortTransaction();
-//       return sendErrorMessage(res, 'Invalid assessment ID', 400);
-//     }
-
-//     if (!mongoose.Types.ObjectId.isValid(userId)) {
-//       await session.abortTransaction();
-//       return sendErrorMessage(res, 'Invalid user ID', 400);
-//     }
-
-//     // Get assessment and course
-//     const assessment = await Assessment.findById(assessmentId)
-//       .populate('course', '_id title')
-//       .session(session);
-
-//     if (!assessment) {
-//       await session.abortTransaction();
-//       return sendErrorMessage(res, 'Assessment not found', 404);
-//     }
-
-//     if (!assessment.course) {
-//       await session.abortTransaction();
-//       return sendErrorMessage(res, 'Associated course not found', 404);
-//     }
-
-//     // Check availability
-//     const now = new Date();
-//     if (
-//       !assessment.isPublished ||
-//       (assessment.availableFrom && now < assessment.availableFrom) ||
-//       (assessment.availableTo && now > assessment.availableTo)
-//     ) {
-//       await session.abortTransaction();
-//       return sendErrorMessage(res, 'Assessment is not currently available', 403);
-//     }
-
-//     // Check enrollment
-//     // const isEnrolled = await Enrollment.exists({
-//     //   user: userId,
-//     //   course: assessment.course._id
-//     // }).lean().session(session);
-
-//     // if (!isEnrolled) {
-//     //   await session.abortTransaction();
-//     //   return sendErrorMessage(res, 'User is not enrolled in this course', 403);
-//     // }
-
-//     // Check attempts
-//     const progress = await UserProgress.findOne({ user: userId }).session(session);
-//     const attempts = progress?.assessments?.filter(a =>
-//       a.assessmentId.equals(assessmentId)
-//     ).length || 0;
-
-//     if (attempts >= assessment.maxAttempts) {
-//       await session.abortTransaction();
-//       return sendErrorMessage(res, `Maximum attempts (${assessment.maxAttempts}) exceeded`, 403);
-//     }
-
-//     // Validate question IDs
-//     const questionIds = assessment.questions.map(q => q._id.toString());
-//     const invalidAnswers = answers.filter(a => !questionIds.includes(a.questionId));
-//     if (invalidAnswers.length > 0) {
-//       await session.abortTransaction();
-//       return sendErrorMessage(res, 'Some answers refer to invalid questions', 400);
-//     }
-
-//     // Calculate score
-//     const scoreDetails = assessment.questions.map(question => {
-//       const userAnswer = answers.find(a => a.questionId === question._id.toString());
-//       const selected = userAnswer?.selectedOption || null;
-//       const isCorrect = selected === question.correctAnswer;
-
-//       return {
-//         questionId: question._id,
-//         selectedOption: selected,
-//         isCorrect,
-//         marksObtained: isCorrect ? question.marks : 0,
-//         status: selected === null ? 'unanswered' : (isCorrect ? 'correct' : 'wrong')
-//       };
-//     });
-
-//     const totalScore = scoreDetails.reduce((sum, q) => sum + q.marksObtained, 0);
-//     const percentage = Math.round((totalScore / assessment.totalMarks) * 100);
-//     const passed = percentage >= assessment.passPercentage;
-
-//     // Update UserProgress
-//     await UserProgress.findOneAndUpdate(
-//       { userId: userId, courseId: assessment.course._id },
-//       {
-//         $setOnInsert: {
-//           user: userId,
-//           course: assessment.course._id,
-//         },
-//         $push: {
-//           assessments: {
-//             assessmentId: assessment._id,
-//             score: totalScore,
-//             totalMarks: assessment.totalMarks,
-//             percentage,
-//             passed,
-//             answers: scoreDetails,
-//             attemptedAt: new Date()
-//           }
-//         },
-//         $inc: { points: passed ? percentage : 0 },
-//         $set: { lastActivity: new Date() }
-//       },
-//       { upsert: true, new: true, session }
-//     );
-
-//     // Update Leaderboard if passed
-//     if (passed) {
-//       await Leaderboard.findOneAndUpdate(
-//         { user: userId },
-//         { $inc: { totalPoints: percentage } },
-//         { upsert: true, session }
-//       );
-//     }
-
-//     await session.commitTransaction();
-
-//     return sendSuccess(res, 'Assessment submitted successfully', {
-//       score: totalScore,
-//       totalMarks: assessment.totalMarks,
-//       percentage,
-//       passed,
-//       attemptsRemaining: assessment.maxAttempts - (attempts + 1),
-//       pointsEarned: passed ? percentage : 0
-//     });
-
-//   } catch (error) {
-//     await session.abortTransaction();
-//     console.error('Submission error:', error);
-//     return sendError(res, 'Failed to process assessment submission', 500);
-//   } finally {
-//     session.endSession();
-//   }
-// };
-
 exports.submitAssessment = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -312,7 +173,7 @@ exports.submitAssessment = async (req, res) => {
 
     if (!mongoose.Types.ObjectId.isValid(assessmentId) || !mongoose.Types.ObjectId.isValid(userId)) {
       await session.abortTransaction();
-      return res.status(400).json({ error: 'Invalid ID format' });
+      return sendErrorMessage(res, 'Invalid ID format');
     }
 
     const assessment = await Assessment.findById(assessmentId)
@@ -321,75 +182,103 @@ exports.submitAssessment = async (req, res) => {
 
     if (!assessment || !assessment.course) {
       await session.abortTransaction();
-      return res.status(404).json({ error: 'Assessment or associated course not found' });
+      return sendErrorMessage(res, 'Assessment or associated course not found');
     }
 
     const now = new Date();
-    if (!assessment.isPublished ||
+    if (
+      !assessment.isPublished ||
       (assessment.availableFrom && now < assessment.availableFrom) ||
-      (assessment.availableTo && now > assessment.availableTo)) {
+      (assessment.availableTo && now > assessment.availableTo)
+    ) {
       await session.abortTransaction();
-      return res.status(403).json({ error: 'Assessment is not currently available' });
+      return sendErrorMessage(res, 'Assessment is not currently available');
     }
 
+    const courseId = assessment.course._id;
+
     const userProgress = await UserCourseProgress.findOne({
-      userId: userId,
-      courseId: assessment.course._id
+      userId,
+      courseId
     }).session(session);
 
-    const attempts = userProgress?.assessments?.filter(a =>
+    const previousAttempts = userProgress?.assessments?.filter(a =>
       a.assessmentId.equals(assessmentId)
     ).length || 0;
 
-    if (attempts >= assessment.maxAttempts) {
+    if (previousAttempts >= assessment.maxAttempts) {
       await session.abortTransaction();
-      return res.status(403).json({ error: `Maximum attempts (${assessment.maxAttempts}) exceeded` });
+      return sendErrorMessage(res, `Maximum attempts (${assessment.maxAttempts}) exceeded`);
     }
 
-    const questionIds = assessment.questions.map(q => q._id.toString());
-    const invalidAnswers = answers.filter(a => !questionIds.includes(a.questionId));
-    if (invalidAnswers.length > 0) {
-      await session.abortTransaction();
-      return res.status(400).json({ error: 'Some answers refer to invalid questions' });
-    }
+    const questionMap = new Map();
+    assessment.questions.forEach(q => questionMap.set(q._id.toString(), q));
 
-    const scoreDetails = assessment.questions.map(question => {
-      const userAnswer = answers.find(a => a.questionId === question._id.toString());
-      const selected = userAnswer?.selectedOption || null;
-      const isCorrect = selected === question.correctAnswer;
+    const scoreDetails = [];
 
-      return {
+    for (const userAnswer of answers) {
+      const question = questionMap.get(userAnswer.questionId);
+      if (!question) continue;
+
+      let isCorrect = false;
+      let marksObtained = 0;
+      let selectedOption = null;
+      let codeOutput = null;
+
+      if (question.type === 'mcq') {
+        selectedOption = userAnswer.selectedOption;
+        isCorrect = selectedOption === question.correctAnswer;
+        marksObtained = isCorrect ? question.marks : 0;
+      } else if (question.type === 'code') {
+        codeOutput = userAnswer.output?.trim();
+        isCorrect = codeOutput === question.expectedOutput.trim();
+        marksObtained = isCorrect ? question.marks : 0;
+      }
+
+      scoreDetails.push({
         questionId: question._id,
-        selectedOption: selected,
+        type: question.type,
+        selectedOption,
+        codeOutput,
         isCorrect,
-        marksObtained: isCorrect ? question.marks : 0
-      };
-    });
+        marksObtained
+      });
+    }
 
     const totalScore = scoreDetails.reduce((sum, q) => sum + q.marksObtained, 0);
     const percentage = Math.round((totalScore / assessment.totalMarks) * 100);
     const passed = percentage >= assessment.passPercentage;
+    const earnedPoints = passed ? percentage : 0;
 
+    // Remove previous record for same assessment
+    await UserCourseProgress.updateOne(
+      { userId, courseId },
+      { $pull: { assessments: { assessmentId } } },
+      { session }
+    );
+
+    // Insert new assessment record and update points
     await UserCourseProgress.findOneAndUpdate(
-      { userId: userId, courseId: assessment.course._id },
+      { userId, courseId },
       {
         $push: {
           assessments: {
-            assessmentId: assessment._id,
+            assessmentId,
             score: totalScore,
             totalMarks: assessment.totalMarks,
             passed,
-            answers: scoreDetails
+            answers: scoreDetails,
+            attemptedAt: new Date()
           }
         },
-        $inc: { points: passed ? percentage : 0 },
+        $inc: { points: earnedPoints },
         $set: { lastActive: new Date() }
       },
-      { session, new: true, upsert: true }
+      { session, upsert: true, new: true }
     );
 
     if (passed) {
-      await Leaderboard.updateStats(userId, assessment.course._id, session);
+      await Leaderboard.updateStats(userId, courseId, session);
     }
 
     await session.commitTransaction();
@@ -399,14 +288,31 @@ exports.submitAssessment = async (req, res) => {
       totalMarks: assessment.totalMarks,
       percentage,
       passed,
-      attemptsRemaining: assessment.maxAttempts - (attempts + 1),
-      pointsEarned: passed ? percentage : 0
+      attemptsRemaining: assessment.maxAttempts - (previousAttempts + 1),
+      pointsEarned: earnedPoints
     });
   } catch (error) {
     await session.abortTransaction();
     console.error('Submission error:', error);
-    return res.status(500).json({ error: 'Failed to process assessment submission' });
+    return sendError(res, 'Failed to process assessment submission');
   } finally {
     session.endSession();
+  }
+};
+
+exports.deleteAssessment = async (req, res) => {
+  try {
+    const { assessmentId: id } = req.params;
+
+    const deleted = await Assessment.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return sendErrorMessage(res, 'Assessment not found');
+    }
+
+    return sendSuccess(res, 'Assessment deleted successfully');
+  } catch (error) {
+    console.error('Delete Error:', error);
+    return sendError(res, `Internal Server Error : ${error}`);
   }
 };

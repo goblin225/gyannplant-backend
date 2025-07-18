@@ -2,45 +2,84 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const Course = require('./Course');
 
+// Question Schema
 const questionSchema = new Schema({
-  question: { 
-    type: String, 
+  type: {
+    type: String,
+    enum: ['mcq', 'code'],
+    required: true,
+    default: 'mcq'
+  },
+  question: {
+    type: String,
     required: [true, 'Question text is required']
   },
   options: {
     type: [String],
-    required: true,
     validate: {
-      validator: function(opts) {
-        return opts.length >= 2 && opts.length <= 5;
+      validator: function (opts) {
+        return this.type === 'mcq' ? opts.length >= 2 && opts.length <= 5 : true;
       },
-      message: 'Question must have between 2 and 5 options'
+      message: 'MCQ must have between 2 and 5 options'
     }
   },
   correctAnswer: {
     type: String,
-    required: [true, 'Correct answer is required'],
+    required: function () {
+      return this.type === 'mcq';
+    },
     validate: {
-      validator: function(value) {
-        return this.options.includes(value);
+      validator: function (value) {
+        return this.type === 'mcq' ? this.options.includes(value) : true;
       },
       message: 'Correct answer must be one of the provided options'
     }
   },
-  marks: { 
-    type: Number, 
+  codeTemplate: {
+    type: String,
+    required: function () {
+      return this.type === 'code';
+    }
+  },
+  expectedOutput: {
+    type: String,
+    required: function () {
+      return this.type === 'code';
+    }
+  },
+  language: {
+    type: String,
+    trim: true,
+    required: function () {
+      return this.type === 'code';
+    }
+  },
+  testCases: [
+    {
+      input: String,
+      output: String
+    }
+  ],
+  marks: {
+    type: Number,
     default: 1,
     min: [1, 'Marks must be at least 1']
   }
 });
 
 const AssessmentSchema = new Schema({
-  course: { 
-    type: Schema.Types.ObjectId, 
+  type: {
+    type: String,
+    enum: ['quiz', 'coding'],
+    default: 'quiz',
+    required: true
+  },
+  course: {
+    type: Schema.Types.ObjectId,
     ref: 'Course',
     required: [true, 'Course reference is required'],
     validate: {
-      validator: async function(courseId) {
+      validator: async function (courseId) {
         if (!mongoose.Types.ObjectId.isValid(courseId)) return false;
         const course = await Course.exists({ _id: courseId });
         return course;
@@ -57,29 +96,28 @@ const AssessmentSchema = new Schema({
   questions: {
     type: [questionSchema],
     validate: {
-      validator: function(qs) {
+      validator: function (qs) {
         return qs.length > 0;
       },
       message: 'Assessment must have at least one question'
     }
   },
-  totalMarks: { 
+  totalMarks: {
     type: Number,
     default: 0,
-    min: [1, 'Total marks must be at least 1']
   },
-  passPercentage: { 
-    type: Number, 
+  passPercentage: {
+    type: Number,
     default: 60,
     min: [0, 'Pass percentage cannot be negative'],
     max: [100, 'Pass percentage cannot exceed 100']
   },
-  timeLimit: { 
+  timeLimit: {
     type: Number,
     default: 30,
     min: [1, 'Time limit must be at least 1 minute']
   },
-  maxAttempts: { 
+  maxAttempts: {
     type: Number,
     default: 1,
     min: [1, 'Max attempts must be at least 1']
@@ -87,23 +125,24 @@ const AssessmentSchema = new Schema({
   availableFrom: {
     type: Date,
     validate: {
-      validator: function(date) {
+      validator: function (date) {
         return !this.availableTo || date < this.availableTo;
       },
       message: 'Available from date must be before available to date'
     }
   },
   availableTo: Date,
-  isPublished: { 
+  isPublished: {
     type: Boolean,
-    default: false 
+    default: false
   }
-}, { 
+}, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
+// Virtual
 AssessmentSchema.virtual('courseDetails', {
   ref: 'Course',
   localField: 'course',
@@ -111,25 +150,26 @@ AssessmentSchema.virtual('courseDetails', {
   justOne: true
 });
 
-AssessmentSchema.pre('save', function(next) {
-  if (this.isModified('questions')) {
+// Safe totalMarks auto-calc
+AssessmentSchema.pre('save', function (next) {
+  if ((!this.totalMarks || this.totalMarks < 1) && Array.isArray(this.questions)) {
     this.totalMarks = this.questions.reduce((sum, q) => sum + (q.marks || 1), 0);
   }
   next();
 });
 
-AssessmentSchema.statics.updateCourseStats = async function(courseId) {
+// Course stats updater
+AssessmentSchema.statics.updateCourseStats = async function (courseId) {
   const stats = await this.aggregate([
     { $match: { course: courseId } },
-    { 
+    {
       $group: {
         _id: '$course',
         assessmentCount: { $sum: 1 },
         avgMarks: { $avg: '$totalMarks' }
-      } 
+      }
     }
   ]);
-
   if (stats.length > 0) {
     await Course.findByIdAndUpdate(courseId, {
       assessmentCount: stats[0].assessmentCount,
@@ -138,14 +178,15 @@ AssessmentSchema.statics.updateCourseStats = async function(courseId) {
   }
 };
 
-AssessmentSchema.post('save', function(doc) {
+// Hooks
+AssessmentSchema.post('save', function (doc) {
+  doc.constructor.updateCourseStats(doc.course);
+});
+AssessmentSchema.post('deleteOne', { document: true }, function (doc) {
   doc.constructor.updateCourseStats(doc.course);
 });
 
-AssessmentSchema.post('deleteOne', { document: true }, function(doc) {
-  doc.constructor.updateCourseStats(doc.course);
-});
-
+// Indexes
 AssessmentSchema.index({ course: 1, isPublished: 1 });
 AssessmentSchema.index({ availableFrom: 1, availableTo: 1 });
 
